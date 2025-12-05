@@ -11,7 +11,7 @@
                 <div class="card-body text-center">
                     <img src="/static/images/default-avatar.png" alt="Profile" class="profile-picture mb-3"
                         id="profile-pic">
-                    <h4 class="fw-bold" id="user-name">Loading...</h4>
+                    <h4 class="fw-bold" id="user-name">Loading profile...</h4>
                     <p class="text-muted" id="user-email"></p>
                     <p class="mt-3" id="user-bio"></p>
                     <div class="d-grid gap-2">
@@ -107,15 +107,19 @@
 
     // Load dashboard data
     async function loadDashboard() {
+        console.log('Dashboard loading started...');
         try {
+            console.log('Fetching profile for user:', user.id);
             // Load profile
             const profileResponse = await fetch(`${API_URL}/profile/${user.id}`);
+            console.log('Profile response status:', profileResponse.status);
 
             if (!profileResponse.ok) {
-                throw new Error('Failed to load profile');
+                throw new Error(`Failed to load profile: ${profileResponse.status}`);
             }
 
             const profileData = await profileResponse.json();
+            console.log('Profile data received:', profileData);
 
             // Update profile info
             document.getElementById('user-name').textContent = profileData.user.full_name;
@@ -138,11 +142,13 @@
             displaySkills(profileData.learning_skills, 'learning-skills', 'primary');
 
             // Load recommendations
+            console.log('Fetching recommendations...');
             const recResponse = await fetch(`${API_URL}/matching/recommendations`, {
                 headers: {
                     'Authorization': `Bearer ${token}`
                 }
             });
+            console.log('Recommendations response status:', recResponse.status);
 
             if (recResponse.ok) {
                 const recData = await recResponse.json();
