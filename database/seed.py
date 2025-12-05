@@ -1,4 +1,9 @@
-from .db import init_db, get_db
+import sys
+import os
+# Ensure parent directory is in path for imports
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+from database.db import init_db, get_db
 from utils import hash_password
 
 # Step 1: create tables

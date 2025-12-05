@@ -1,5 +1,5 @@
 from flask import Blueprint, request, jsonify
-from database import get_db
+from database.db import get_db
 from utils import hash_password, verify_password, generate_token, validate_email, validate_password, sanitize_input
 from extensions import limiter
 
