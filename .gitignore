@@ -11,4 +11,3 @@ venv/
 .DS_Store
 .vscode/
 *.log
-/database/seed.py
