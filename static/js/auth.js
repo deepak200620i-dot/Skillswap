@@ -1,7 +1,7 @@
 // Authentication JavaScript
 
 // API Base URL
-const API_URL = 'http://localhost:5000/api';
+const API_URL = 'https://skillswap-v4rj.onrender.com/api';
 
 // Signup Form Handler
 if (document.getElementById('signup-form')) {
