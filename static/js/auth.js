@@ -1,8 +1,8 @@
 // Authentication JavaScript
 
-// API Base URL
-const API_URL = '/api';
-
+// API Base URL - auto-detect environment
+const API_URL = 'https://skillswap-v4rj.onrender.com/api';
+   
 // Signup Form Handler
 if (document.getElementById('signup-form')) {
     document.getElementById('signup-form').addEventListener('submit', async function (e) {
