@@ -3,7 +3,7 @@ from flask_cors import CORS
 from config import config
 from extensions import limiter
 from routes import auth_bp, profile_bp, skills_bp, matching_bp, requests_bp, reviews_bp, chat_bp
-from db import init_db   # ✅ ADD THIS IMPORT
+from database.db import init_db
 import os               # ✅ ADD THIS IMPORT
 
 def create_app(config_name='development'):
