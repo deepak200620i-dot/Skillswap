@@ -2,6 +2,7 @@
 from .auth_helper import hash_password, verify_password, generate_token, decode_token, token_required
 from .validators import validate_email, validate_password, sanitize_input
 from .profile_helper import get_profile_picture_url
+from .profile import profile_bp
 
 __all__ = [
     'hash_password', 'verify_password', 'generate_token', 'decode_token', 'token_required',
