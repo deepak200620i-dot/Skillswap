@@ -93,17 +93,18 @@ def create_app(config_name='development'):
 
 app = create_app()
 
-if __name__ == '__main__':
-    # Initialize database
-    from database import init_db
+with app.app_context():
     try:
         init_db()
+        print("✅ Database initialized successfully")
     except Exception as e:
-        print(f"Error initializing database: {e}")
-        
+        import traceback
+        traceback.print_exc()
+        print("❌ Database init failed:", str(e))
+
+if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port)
-
 
 
    
