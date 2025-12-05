@@ -1,0 +1,127 @@
+{% extends "base.html" %}
+
+{% block title %}Browse Skills - SkillSwap{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="text-center mb-5">
+        <h1 class="fw-bold">Explore Skills</h1>
+        <p class="text-muted">Discover what you can learn from our community</p>
+    </div>
+
+    <!-- Search and Filter -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-8">
+                    <input type="text" class="form-control" id="search-input" placeholder="Search for a skill...">
+                </div>
+                <div class="col-md-4">
+                    <select class="form-select" id="category-filter">
+                        <option value="">All Categories</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Skills Grid -->
+    <div id="skills-container" class="row g-4">
+        <div class="col-12 text-center">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    const API_URL = 'http://localhost:5000/api';
+    let allSkills = [];
+
+    async function loadSkills() {
+        try {
+            const response = await fetch(`${API_URL}/skills/`);
+            const data = await response.json();
+
+            if (response.ok) {
+                allSkills = data.skills;
+                displaySkills(allSkills);
+                loadCategories();
+            }
+        } catch (error) {
+            console.error('Error loading skills:', error);
+        }
+    }
+
+    function loadCategories() {
+        const categories = [...new Set(allSkills.map(s => s.category))];
+        const categoryFilter = document.getElementById('category-filter');
+
+        categories.forEach(cat => {
+            const option = document.createElement('option');
+            option.value = cat;
+            option.textContent = cat;
+            categoryFilter.appendChild(option);
+        });
+    }
+
+    function displaySkills(skills) {
+        const container = document.getElementById('skills-container');
+
+        if (skills.length === 0) {
+            container.innerHTML = '<div class="col-12 text-center"><p class="text-muted">No skills found</p></div>';
+            return;
+        }
+
+        container.innerHTML = skills.map(skill => `
+            <div class="col-md-4">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <h5 class="fw-bold mb-0">${skill.name}</h5>
+                            <span class="badge bg-primary">${skill.category}</span>
+                        </div>
+                        <p class="text-muted small">${skill.description || 'No description'}</p>
+                        <div class="d-grid gap-2 mt-3">
+                            <a href="/skills/search?skill_id=${skill.id}" class="btn btn-outline-primary btn-sm">
+                                <i class="bi bi-search"></i> Find Teachers
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    // Search functionality
+    document.getElementById('search-input').addEventListener('input', function (e) {
+        const searchTerm = e.target.value.toLowerCase();
+        const category = document.getElementById('category-filter').value;
+
+        let filtered = allSkills.filter(skill =>
+            skill.name.toLowerCase().includes(searchTerm) &&
+            (category === '' || skill.category === category)
+        );
+
+        displaySkills(filtered);
+    });
+
+    // Category filter
+    document.getElementById('category-filter').addEventListener('change', function (e) {
+        const category = e.target.value;
+        const searchTerm = document.getElementById('search-input').value.toLowerCase();
+
+        let filtered = allSkills.filter(skill =>
+            skill.name.toLowerCase().includes(searchTerm) &&
+            (category === '' || skill.category === category)
+        );
+
+        displaySkills(filtered);
+    });
+
+    loadSkills();
+</script>
+{% endblock %}

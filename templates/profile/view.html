@@ -1,0 +1,345 @@
+{% extends "base.html" %}
+
+{% block title %}View Profile - SkillSwap{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row">
+        <!-- Profile Card -->
+        <div class="col-lg-4 mb-4">
+            <div class="card">
+                <div class="card-body text-center">
+                    <img src="/static/images/default-avatar.png" alt="Profile" class="profile-picture mb-3"
+                        id="profile-pic" style="width: 150px; height: 150px; object-fit: cover; border-radius: 50%;">
+                    <h3 class="fw-bold" id="user-name">Loading...</h3>
+                    <p class="text-muted" id="user-email"></p>
+                    <div class="mt-3">
+                        <p id="user-bio" class="text-muted"></p>
+                    </div>
+                    <div class="mt-3" id="user-info">
+                        <!-- Location and availability will be added here -->
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div id="action-buttons" class="mt-4" style="display: none;">
+                        <button id="btn-request" class="btn btn-primary w-100 mb-2" data-bs-toggle="modal"
+                            data-bs-target="#requestModal">
+                            Request Swap
+                        </button>
+                        <button id="btn-message" class="btn btn-outline-primary w-100 mb-2" data-bs-toggle="modal"
+                            data-bs-target="#messageModal">
+                            <i class="bi bi-chat-dots"></i> Message
+                        </button>
+                        <a id="btn-edit" href="/profile/edit" class="btn btn-outline-primary w-100">
+                            Edit Profile
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Reviews Summary -->
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Reviews</h5>
+                </div>
+                <div class="card-body">
+                    <div class="text-center mb-3">
+                        <h2 class="fw-bold display-4 mb-0" id="avg-rating">-</h2>
+                        <div id="stars-display" class="text-warning fs-4"></div>
+                        <p class="text-muted small" id="review-count">0 reviews</p>
+                    </div>
+                    <div id="reviews-list">
+                        <!-- Reviews will be loaded here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Skills -->
+        <div class="col-lg-8">
+            <!-- Teaching Skills -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-mortarboard text-success"></i> Can Teach</h5>
+                </div>
+                <div class="card-body">
+                    <div id="teaching-skills">
+                        <p class="text-muted">Loading...</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Learning Skills -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-book text-primary"></i> Wants to Learn</h5>
+                </div>
+                <div class="card-body">
+                    <div id="learning-skills">
+                        <p class="text-muted">Loading...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Request Swap Modal -->
+<div class="modal fade" id="requestModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Request Skill Swap</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="request-form">
+                    <div class="mb-3">
+                        <label for="skill-select" class="form-label">Which skill do you want to learn?</label>
+                        <select class="form-select" id="skill-select" required>
+                            <!-- Options populated via JS -->
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="message" class="form-label">Message</label>
+                        <textarea class="form-control" id="message" rows="3"
+                            placeholder="Hi, I'd like to learn this skill from you..."></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" onclick="sendRequest()">Send Request</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Send Message Modal -->
+<div class="modal fade" id="messageModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Send Message</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="dm-form">
+                    <div class="mb-3">
+                        <label for="dm-content" class="form-label">Message</label>
+                        <textarea class="form-control" id="dm-content" rows="3"
+                            placeholder="Type your message here..."></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" onclick="sendDirectMessage()">Send</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    const API_URL = 'http://localhost:5000/api';
+    const userId = window.location.pathname.split('/').pop();
+    const currentUser = JSON.parse(localStorage.getItem('user') || 'null');
+    const token = localStorage.getItem('token');
+
+    async function loadProfile() {
+        try {
+            const response = await fetch(`${API_URL}/profile/${userId}`);
+            const data = await response.json();
+
+            if (response.ok) {
+                // Display profile info
+                document.getElementById('user-name').textContent = data.user.full_name;
+                document.getElementById('user-email').textContent = data.user.email;
+                document.getElementById('user-bio').textContent = data.user.bio || 'No bio available';
+
+                // Set profile picture
+                if (data.user.profile_picture) {
+                    document.getElementById('profile-pic').src = data.user.profile_picture;
+                }
+
+                // Display location and availability
+                let infoHTML = '';
+                if (data.user.location) {
+                    infoHTML += `<p class="mb-1"><i class="bi bi-geo-alt"></i> ${data.user.location}</p>`;
+                }
+                if (data.user.availability) {
+                    infoHTML += `<p class="mb-1"><i class="bi bi-clock"></i> ${data.user.availability}</p>`;
+                }
+                document.getElementById('user-info').innerHTML = infoHTML;
+
+                // Display skills
+                displaySkills(data.teaching_skills, 'teaching-skills');
+                displaySkills(data.learning_skills, 'learning-skills');
+
+                // Populate modal skill select
+                populateSkillSelect(data.teaching_skills);
+
+                // Show action buttons
+                const actionButtons = document.getElementById('action-buttons');
+                const btnRequest = document.getElementById('btn-request');
+                const btnEdit = document.getElementById('btn-edit');
+
+                if (currentUser) {
+                    actionButtons.style.display = 'block';
+
+                    if (currentUser.id == userId) {
+                        // Own profile: Show Edit, Hide Request
+                        btnRequest.style.display = 'none';
+                        btnEdit.style.display = 'block';
+                    } else {
+                        // Other's profile: Show Request, Hide Edit
+                        btnRequest.style.display = 'block';
+                        btnEdit.style.display = 'none';
+                    }
+                }
+
+                // Load reviews
+                loadReviews();
+            }
+        } catch (error) {
+            console.error('Error loading profile:', error);
+        }
+    }
+
+    function displaySkills(skills, containerId) {
+        const container = document.getElementById(containerId);
+
+        if (skills.length === 0) {
+            container.innerHTML = '<p class="text-muted">No skills listed</p>';
+            return;
+        }
+
+        container.innerHTML = skills.map(skill => `
+            <span class="skill-badge">
+                ${skill.name}
+                <span class="badge badge-${skill.proficiency_level.toLowerCase()}">${skill.proficiency_level}</span>
+            </span>
+        `).join('');
+    }
+
+    function populateSkillSelect(skills) {
+        const select = document.getElementById('skill-select');
+        select.innerHTML = skills.map(skill =>
+            `<option value="${skill.id}">${skill.name}</option>`
+        ).join('');
+    }
+
+    async function loadReviews() {
+        try {
+            const response = await fetch(`${API_URL}/reviews/user/${userId}`);
+            const data = await response.json();
+
+            if (response.ok) {
+                // Update stats
+                document.getElementById('avg-rating').textContent = data.stats.average || '-';
+                document.getElementById('review-count').textContent = `${data.stats.count} reviews`;
+
+                // Stars
+                const stars = Math.round(data.stats.average || 0);
+                document.getElementById('stars-display').innerHTML = '★'.repeat(stars) + '☆'.repeat(5 - stars);
+
+                // List
+                const container = document.getElementById('reviews-list');
+                if (data.reviews.length === 0) {
+                    container.innerHTML = '<p class="text-muted text-center small">No reviews yet</p>';
+                    return;
+                }
+
+                container.innerHTML = data.reviews.map(review => `
+                    <div class="border-bottom pb-2 mb-2">
+                        <div class="d-flex justify-content-between">
+                            <small class="fw-bold">${review.reviewer_name}</small>
+                            <small class="text-warning">${'★'.repeat(review.rating)}</small>
+                        </div>
+                        <p class="small mb-0 text-muted">"${review.comment}"</p>
+                    </div>
+                `).join('');
+            }
+        } catch (error) {
+            console.error('Error loading reviews:', error);
+        }
+    }
+
+    async function sendRequest() {
+        if (!token) {
+            window.location.href = '/login';
+            return;
+        }
+
+        const skillId = document.getElementById('skill-select').value;
+        const message = document.getElementById('message').value;
+
+        try {
+            const response = await fetch(`${API_URL}/requests/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    receiver_id: parseInt(userId),
+                    skill_id: parseInt(skillId),
+                    message: message
+                })
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                alert('Request sent successfully!');
+                const modal = bootstrap.Modal.getInstance(document.getElementById('requestModal'));
+                modal.hide();
+            } else {
+                alert(data.error || 'Failed to send request');
+            }
+        } catch (error) {
+            console.error('Error sending request:', error);
+            alert('Network error');
+        }
+    }
+
+    async function sendDirectMessage() {
+        if (!token) {
+            window.location.href = '/login';
+            return;
+        }
+
+        const content = document.getElementById('dm-content').value;
+        if (!content.trim()) return;
+
+        try {
+            const response = await fetch(`${API_URL}/chat/send`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    receiver_id: parseInt(userId),
+                    content: content
+                })
+            });
+
+            if (response.ok) {
+                alert('Message sent!');
+                const modal = bootstrap.Modal.getInstance(document.getElementById('messageModal'));
+                modal.hide();
+            } else {
+                alert('Failed to send message');
+            }
+        } catch (error) {
+            console.error('Error sending message:', error);
+            alert('Network error');
+        }
+    }
+
+    loadProfile();
+</script>
+{% endblock %}

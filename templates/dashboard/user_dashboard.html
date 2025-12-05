@@ -1,0 +1,198 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - SkillSwap{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row">
+        <!-- Profile Summary Card -->
+        <div class="col-lg-4 mb-4">
+            <div class="card">
+                <div class="card-body text-center">
+                    <img src="/static/images/default-avatar.png" alt="Profile" class="profile-picture mb-3"
+                        id="profile-pic">
+                    <h4 class="fw-bold" id="user-name">Loading...</h4>
+                    <p class="text-muted" id="user-email"></p>
+                    <p class="mt-3" id="user-bio"></p>
+                    <div class="d-grid gap-2">
+                        <a href="/profile/edit" class="btn btn-outline-primary">
+                            <i class="bi bi-pencil"></i> Edit Profile
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Stats -->
+            <div class="card mt-3">
+                <div class="card-body">
+                    <h6 class="fw-bold mb-3">Quick Stats</h6>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="text-muted">Teaching</span>
+                        <span class="badge bg-success" id="teaching-count">0</span>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <span class="text-muted">Learning</span>
+                        <span class="badge bg-primary" id="learning-count">0</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="col-lg-8">
+            <!-- Welcome Card -->
+            <div class="card bg-gradient-primary text-white mb-4">
+                <div class="card-body">
+                    <h3 class="fw-bold">Welcome back! 👋</h3>
+                    <p class="mb-0">Ready to continue your learning journey?</p>
+                </div>
+            </div>
+
+            <!-- Skills I Teach -->
+            <div class="card mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="bi bi-mortarboard text-success"></i> Skills I Teach</h5>
+                    <button class="btn btn-sm btn-success" onclick="window.location.href='/profile/edit'">
+                        <i class="bi bi-plus"></i> Add Skill
+                    </button>
+                </div>
+                <div class="card-body">
+                    <div id="teaching-skills">
+                        <p class="text-muted">Loading your skills...</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Skills I Want to Learn -->
+            <div class="card mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="bi bi-book text-primary"></i> Skills I Want to Learn</h5>
+                    <button class="btn btn-sm btn-primary" onclick="window.location.href='/profile/edit'">
+                        <i class="bi bi-plus"></i> Add Skill
+                    </button>
+                </div>
+                <div class="card-body">
+                    <div id="learning-skills">
+                        <p class="text-muted">Loading your skills...</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recommendations -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-stars text-warning"></i> Recommended for You</h5>
+                </div>
+                <div class="card-body">
+                    <div id="recommendations">
+                        <p class="text-muted">Loading recommendations...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    const API_URL = 'http://localhost:5000/api';
+
+    // Check authentication
+    const token = localStorage.getItem('token');
+    const user = JSON.parse(localStorage.getItem('user') || 'null');
+
+    if (!token || !user) {
+        window.location.href = '/login';
+    }
+
+    // Load dashboard data
+    async function loadDashboard() {
+        try {
+            // Load profile
+            const profileResponse = await fetch(`${API_URL}/profile/${user.id}`);
+            const profileData = await profileResponse.json();
+
+            if (profileResponse.ok) {
+                // Update profile info
+                document.getElementById('user-name').textContent = profileData.user.full_name;
+                document.getElementById('user-email').textContent = profileData.user.email;
+                document.getElementById('user-bio').textContent = profileData.user.bio || 'No bio yet';
+
+                // Set profile picture
+                if (profileData.user.profile_picture) {
+                    document.getElementById('profile-pic').src = profileData.user.profile_picture;
+                }
+
+                // Update skills counts
+                document.getElementById('teaching-count').textContent = profileData.teaching_skills.length;
+                document.getElementById('learning-count').textContent = profileData.learning_skills.length;
+
+                // Display teaching skills
+                displaySkills(profileData.teaching_skills, 'teaching-skills', 'success');
+
+                // Display learning skills
+                displaySkills(profileData.learning_skills, 'learning-skills', 'primary');
+            }
+
+            // Load recommendations
+            const recResponse = await fetch(`${API_URL}/matching/recommendations`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+
+            const recData = await recResponse.json();
+            if (recResponse.ok && recData.recommendations.length > 0) {
+                displayRecommendations(recData.recommendations);
+            } else {
+                document.getElementById('recommendations').innerHTML = '<p class="text-muted">No recommendations yet. Add skills you want to learn!</p>';
+            }
+
+        } catch (error) {
+            console.error('Error loading dashboard:', error);
+        }
+    }
+
+    function displaySkills(skills, containerId, colorClass) {
+        const container = document.getElementById(containerId);
+
+        if (skills.length === 0) {
+            container.innerHTML = '<p class="text-muted">No skills yet. Add some to get started!</p>';
+            return;
+        }
+
+        container.innerHTML = skills.map(skill => `
+            <span class="skill-badge">
+                ${skill.name}
+                <span class="badge badge-${skill.proficiency_level.toLowerCase()}">${skill.proficiency_level}</span>
+            </span>
+        `).join('');
+    }
+
+    function displayRecommendations(recommendations) {
+        const container = document.getElementById('recommendations');
+
+        const uniqueUsers = {};
+        recommendations.forEach(rec => {
+            if (!uniqueUsers[rec.id]) {
+                uniqueUsers[rec.id] = rec;
+            }
+        });
+
+        container.innerHTML = Object.values(uniqueUsers).slice(0, 5).map(rec => `
+            <div class="user-card">
+                <img src="${rec.profile_picture}" alt="${rec.full_name}" class="profile-picture-sm me-3">
+                <div class="flex-grow-1">
+                    <h6 class="mb-0">${rec.full_name}</h6>
+                    <p class="text-muted small mb-0">Teaches: ${rec.skill_name} (${rec.proficiency_level})</p>
+                </div>
+                <a href="/profile/${rec.id}" class="btn btn-sm btn-outline-primary">View Profile</a>
+            </div>
+        `).join('');
+    }
+
+    // Load dashboard on page load
+    loadDashboard();
+</script>
+{% endblock %}

@@ -1,0 +1,123 @@
+{% extends "base.html" %}
+
+{% block title %}Welcome to SkillSwap{% endblock %}
+
+{% block content %}
+<!-- Hero Section -->
+<section class="hero-section">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-lg-6 text-center text-lg-start">
+                <h1 class="display-3 fw-bold fade-in">Learn, Teach, Grow Together</h1>
+                <p class="lead mb-4">Connect with peers, share your skills, and discover new talents in our vibrant
+                    learning community.</p>
+                <div class="d-grid gap-2 d-md-flex justify-content-md-start">
+                    <a href="/signup" class="btn btn-light btn-lg px-4 me-md-2">Get Started</a>
+                    <a href="/skills" class="btn btn-outline-light btn-lg px-4">Browse Skills</a>
+                </div>
+            </div>
+            <div class="col-lg-6 mt-4 mt-lg-0">
+                <div class="text-center">
+                    <i class="bi bi-people-fill" style="font-size: 15rem; opacity: 0.2;"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Features Section -->
+<section class="py-5">
+    <div class="container">
+        <div class="text-center mb-5">
+            <h2 class="fw-bold">Why SkillSwap?</h2>
+            <p class="text-muted">Empowering students to learn from each other</p>
+        </div>
+
+        <div class="row g-4">
+            <div class="col-md-4">
+                <div class="card feature-card">
+                    <div class="feature-icon mx-auto">
+                        <i class="bi bi-mortarboard"></i>
+                    </div>
+                    <h4>Learn New Skills</h4>
+                    <p class="text-muted">Discover skills you want to learn and find the perfect peer teacher to guide
+                        you.</p>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <div class="card feature-card">
+                    <div class="feature-icon mx-auto" style="background: var(--gradient-secondary);">
+                        <i class="bi bi-person-badge"></i>
+                    </div>
+                    <h4>Share Your Expertise</h4>
+                    <p class="text-muted">Teach what you know best and help others grow while building your reputation.
+                    </p>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <div class="card feature-card">
+                    <div class="feature-icon mx-auto" style="background: var(--gradient-success);">
+                        <i class="bi bi-diagram-3"></i>
+                    </div>
+                    <h4>Build Community</h4>
+                    <p class="text-muted">Connect with like-minded peers and create a strong network of learners.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- How It Works -->
+<section class="py-5 bg-light">
+    <div class="container">
+        <div class="text-center mb-5">
+            <h2 class="fw-bold">How It Works</h2>
+            <p class="text-muted">Get started in three simple steps</p>
+        </div>
+
+        <div class="row g-4">
+            <div class="col-md-4">
+                <div class="text-center">
+                    <div class="rounded-circle bg-primary text-white d-inline-flex align-items-center justify-content-center"
+                        style="width: 60px; height: 60px; font-size: 1.5rem; font-weight: bold;">1</div>
+                    <h5 class="mt-3">Create Your Profile</h5>
+                    <p class="text-muted">Sign up and list the skills you can teach and want to learn.</p>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <div class="text-center">
+                    <div class="rounded-circle bg-primary text-white d-inline-flex align-items-center justify-content-center"
+                        style="width: 60px; height: 60px; font-size: 1.5rem; font-weight: bold;">2</div>
+                    <h5 class="mt-3">Find Your Match</h5>
+                    <p class="text-muted">Browse skills and discover peers who can help you learn.</p>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <div class="text-center">
+                    <div class="rounded-circle bg-primary text-white d-inline-flex align-items-center justify-content-center"
+                        style="width: 60px; height: 60px; font-size: 1.5rem; font-weight: bold;">3</div>
+                    <h5 class="mt-3">Start Learning</h5>
+                    <p class="text-muted">Connect, collaborate, and grow together!</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- CTA Section -->
+<section class="py-5">
+    <div class="container">
+        <div class="card bg-gradient-primary text-white text-center p-5">
+            <h2 class="fw-bold mb-3">Ready to Start Your Learning Journey?</h2>
+            <p class="lead mb-4">Join thousands of students sharing and learning skills together.</p>
+            <div>
+                <a href="/signup" class="btn btn-light btn-lg px-5">Join Now - It's Free!</a>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

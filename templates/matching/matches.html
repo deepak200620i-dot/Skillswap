@@ -1,0 +1,134 @@
+{% extends "base.html" %}
+
+{% block title %}Find Your Match - SkillSwap{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="text-center mb-5">
+        <h1 class="fw-bold">Find Your Perfect Match</h1>
+        <p class="text-muted">Discover peers who can help you learn or want to learn from you</p>
+    </div>
+
+    <!-- Search Options -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-8">
+                    <select class="form-select" id="skill-select">
+                        <option value="">Select a skill...</option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <select class="form-select" id="search-type">
+                        <option value="teachers">Find Teachers</option>
+                        <option value="learners">Find Learners</option>
+                    </select>
+                </div>
+            </div>
+            <button class="btn btn-primary mt-3 w-100" onclick="searchMatches()">
+                <i class="bi bi-search"></i> Search
+            </button>
+        </div>
+    </div>
+
+    <!-- Results -->
+    <div id="results-container">
+        <div class="text-center text-muted">
+            <i class="bi bi-search" style="font-size: 4rem; opacity: 0.2;"></i>
+            <p>Select a skill and search type to find matches</p>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    const API_URL = 'http://localhost:5000/api';
+
+    async function loadSkills() {
+        try {
+            const response = await fetch(`${API_URL}/skills/`);
+            const data = await response.json();
+
+            if (response.ok) {
+                const select = document.getElementById('skill-select');
+                data.skills.forEach(skill => {
+                    const option = document.createElement('option');
+                    option.value = skill.id;
+                    option.textContent = `${skill.name} (${skill.category})`;
+                    select.appendChild(option);
+                });
+            }
+        } catch (error) {
+            console.error('Error loading skills:', error);
+        }
+    }
+
+    async function searchMatches() {
+        const skillId = document.getElementById('skill-select').value;
+        const searchType = document.getElementById('search-type').value;
+
+        if (!skillId) {
+            alert('Please select a skill');
+            return;
+        }
+
+        const resultsContainer = document.getElementById('results-container');
+        resultsContainer.innerHTML = '<div class="text-center"><div class="spinner-border text-primary"></div></div>';
+
+        try {
+            const endpoint = searchType === 'teachers' ? 'find-teachers' : 'find-learners';
+            const response = await fetch(`${API_URL}/matching/${endpoint}?skill_id=${skillId}`);
+            const data = await response.json();
+
+            if (response.ok) {
+                const users = searchType === 'teachers' ? data.teachers : data.learners;
+                displayResults(users, searchType);
+            } else {
+                resultsContainer.innerHTML = '<div class="text-center text-muted">No matches found</div>';
+            }
+        } catch (error) {
+            console.error('Error searching:', error);
+            resultsContainer.innerHTML = '<div class="text-center text-danger">Error loading results</div>';
+        }
+    }
+
+    function displayResults(users, type) {
+        const resultsContainer = document.getElementById('results-container');
+
+        if (users.length === 0) {
+            resultsContainer.innerHTML = '<div class="text-center text-muted">No matches found</div>';
+            return;
+        }
+
+        resultsContainer.innerHTML = `
+            <h4 class="fw-bold mb-3">Found ${users.length} ${type === 'teachers' ? 'Teachers' : 'Learners'}</h4>
+            <div class="row g-4">
+                ${users.map(user => `
+                    <div class="col-md-6">
+                        <div class="card h-100">
+                            <div class="card-body">
+                                <div class="d-flex align-items-start">
+                                    <img src="${user.profile_picture}" alt="${user.full_name}" class="profile-picture-sm me-3">
+                                    <div class="flex-grow-1">
+                                        <h5 class="fw-bold mb-1">${user.full_name}</h5>
+                                        <span class="badge badge-${user.proficiency_level.toLowerCase()} mb-2">${user.proficiency_level}</span>
+                                        <p class="text-muted small mb-2">${user.bio || 'No bio available'}</p>
+                                        ${user.location ? `<p class="small mb-2"><i class="bi bi-geo-alt"></i> ${user.location}</p>` : ''}
+                                        ${user.availability ? `<p class="small mb-2"><i class="bi bi-clock"></i> ${user.availability}</p>` : ''}
+                                        <div class="d-grid gap-2">
+                                            <a href="/profile/${user.id}" class="btn btn-primary btn-sm">View Profile</a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `).join('')}
+            </div>
+        `;
+    }
+
+    loadSkills();
+</script>
+{% endblock %}

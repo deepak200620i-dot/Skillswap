@@ -1,0 +1,226 @@
+{% extends "base.html" %}
+
+{% block title %}My Requests - SkillSwap{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <h2 class="fw-bold mb-4">My Swap Requests</h2>
+
+    <ul class="nav nav-tabs mb-4" id="requestsTab" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="incoming-tab" data-bs-toggle="tab" data-bs-target="#incoming"
+                type="button" role="tab">Incoming Requests</button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="sent-tab" data-bs-toggle="tab" data-bs-target="#sent" type="button"
+                role="tab">Sent Requests</button>
+        </li>
+    </ul>
+
+    <div class="tab-content" id="requestsTabContent">
+        <!-- Incoming Requests -->
+        <div class="tab-pane fade show active" id="incoming" role="tabpanel">
+            <div id="incoming-list" class="row g-4">
+                <div class="col-12 text-center">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sent Requests -->
+        <div class="tab-pane fade" id="sent" role="tabpanel">
+            <div id="sent-list" class="row g-4">
+                <div class="col-12 text-center">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Toast Container -->
+<div class="toast-container position-fixed bottom-0 end-0 p-3">
+    <div id="liveToast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="toast-header">
+            <strong class="me-auto">Notification</strong>
+            <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+        <div class="toast-body" id="toast-message"></div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    const API_URL = 'http://localhost:5000/api';
+    const token = localStorage.getItem('token');
+    const user = JSON.parse(localStorage.getItem('user') || 'null');
+
+    if (!token || !user) {
+        window.location.href = '/login';
+    }
+
+    async function loadRequests() {
+        try {
+            const response = await fetch(`${API_URL}/requests/`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+            const data = await response.json();
+
+            if (response.ok) {
+                displayIncoming(data.incoming);
+                displaySent(data.sent);
+            }
+        } catch (error) {
+            console.error('Error loading requests:', error);
+        }
+    }
+
+    function displayIncoming(requests) {
+        const container = document.getElementById('incoming-list');
+        if (requests.length === 0) {
+            container.innerHTML = '<div class="col-12 text-center"><p class="text-muted">No incoming requests</p></div>';
+            return;
+        }
+
+        container.innerHTML = requests.map(req => `
+            <div class="col-md-6">
+                <div class="card h-100 border-${getStatusColor(req.status)}">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start mb-3">
+                            <div class="d-flex align-items-center">
+                                <img src="${req.sender_pic}" class="profile-picture-sm me-2">
+                                <div>
+                                    <h6 class="mb-0 fw-bold">${req.sender_name}</h6>
+                                    <small class="text-muted">Wants to learn: ${req.skill_name}</small>
+                                </div>
+                            </div>
+                            <span class="badge bg-${getStatusColor(req.status)}">${req.status}</span>
+                        </div>
+                        <p class="card-text small bg-light p-2 rounded">"${req.message}"</p>
+                        
+                        <div class="d-flex gap-2 mt-3">
+                            ${getIncomingActions(req)}
+                        </div>
+                    </div>
+                    <div class="card-footer text-muted small">
+                        Received: ${new Date(req.created_at).toLocaleDateString()}
+                    </div>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    function displaySent(requests) {
+        const container = document.getElementById('sent-list');
+        if (requests.length === 0) {
+            container.innerHTML = '<div class="col-12 text-center"><p class="text-muted">No sent requests</p></div>';
+            return;
+        }
+
+        container.innerHTML = requests.map(req => `
+            <div class="col-md-6">
+                <div class="card h-100 border-${getStatusColor(req.status)}">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start mb-3">
+                            <div class="d-flex align-items-center">
+                                <img src="${req.receiver_pic}" class="profile-picture-sm me-2">
+                                <div>
+                                    <h6 class="mb-0 fw-bold">${req.receiver_name}</h6>
+                                    <small class="text-muted">Teaching: ${req.skill_name}</small>
+                                </div>
+                            </div>
+                            <span class="badge bg-${getStatusColor(req.status)}">${req.status}</span>
+                        </div>
+                        <p class="card-text small bg-light p-2 rounded">"${req.message}"</p>
+                        
+                        <div class="d-flex gap-2 mt-3">
+                            ${getSentActions(req)}
+                        </div>
+                    </div>
+                    <div class="card-footer text-muted small">
+                        Sent: ${new Date(req.created_at).toLocaleDateString()}
+                    </div>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    function getStatusColor(status) {
+        switch (status) {
+            case 'pending': return 'warning';
+            case 'accepted': return 'success';
+            case 'rejected': return 'danger';
+            case 'completed': return 'info';
+            default: return 'secondary';
+        }
+    }
+
+    function getIncomingActions(req) {
+        if (req.status === 'pending') {
+            return `
+                <button class="btn btn-sm btn-success flex-grow-1" onclick="updateStatus(${req.id}, 'accepted')">Accept</button>
+                <button class="btn btn-sm btn-outline-danger flex-grow-1" onclick="updateStatus(${req.id}, 'rejected')">Reject</button>
+            `;
+        } else if (req.status === 'accepted') {
+            return `
+                <button class="btn btn-sm btn-info text-white flex-grow-1" onclick="updateStatus(${req.id}, 'completed')">Mark Completed</button>
+                <a href="mailto:?subject=Skill Swap&body=Let's connect!" class="btn btn-sm btn-outline-primary flex-grow-1">Email</a>
+            `;
+        } else if (req.status === 'completed') {
+            return `<a href="/reviews/add?request_id=${req.id}" class="btn btn-sm btn-outline-warning flex-grow-1">Leave Review</a>`;
+        }
+        return '';
+    }
+
+    function getSentActions(req) {
+        if (req.status === 'accepted') {
+            return `
+                <button class="btn btn-sm btn-info text-white flex-grow-1" onclick="updateStatus(${req.id}, 'completed')">Mark Completed</button>
+                <a href="mailto:?subject=Skill Swap&body=Let's connect!" class="btn btn-sm btn-outline-primary flex-grow-1">Email</a>
+            `;
+        } else if (req.status === 'completed') {
+            return `<a href="/reviews/add?request_id=${req.id}" class="btn btn-sm btn-outline-warning flex-grow-1">Leave Review</a>`;
+        }
+        return '';
+    }
+
+    async function updateStatus(requestId, status) {
+        try {
+            const response = await fetch(`${API_URL}/requests/${requestId}/status`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ status })
+            });
+
+            if (response.ok) {
+                showToast(`Request ${status}`);
+                loadRequests();
+            } else {
+                showToast('Failed to update status');
+            }
+        } catch (error) {
+            console.error('Error updating status:', error);
+        }
+    }
+
+    function showToast(message) {
+        const toastEl = document.getElementById('liveToast');
+        const toastBody = document.getElementById('toast-message');
+        toastBody.textContent = message;
+        const toast = new bootstrap.Toast(toastEl);
+        toast.show();
+    }
+
+    loadRequests();
+</script>
+{% endblock %}

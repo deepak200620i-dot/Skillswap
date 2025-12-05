@@ -1,0 +1,248 @@
+{% extends "base.html" %}
+
+{% block title %}Messages - SkillSwap{% endblock %}
+
+{% block content %}
+<div class="container py-4" style="height: calc(100vh - 100px);">
+    <div class="row h-100">
+        <!-- Conversations List -->
+        <div class="col-md-4 h-100 border-end">
+            <div class="d-flex flex-column h-100">
+                <h4 class="mb-3 px-2">Messages</h4>
+                <div class="list-group list-group-flush overflow-auto flex-grow-1" id="conversations-list">
+                    <!-- Conversations will be loaded here -->
+                    <div class="text-center mt-5">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Chat Area -->
+        <div class="col-md-8 h-100">
+            <div class="d-flex flex-column h-100" id="chat-area">
+                <!-- Chat Header -->
+                <div class="border-bottom p-3 d-none" id="chat-header">
+                    <div class="d-flex align-items-center">
+                        <a id="chat-header-link" href="#"
+                            class="d-flex align-items-center text-decoration-none text-dark">
+                            <img src="" id="chat-header-img" class="rounded-circle me-3"
+                                style="width: 40px; height: 40px; object-fit: cover;">
+                            <h5 class="mb-0" id="chat-header-name">User Name</h5>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Messages Container -->
+                <div class="flex-grow-1 overflow-auto p-3 d-none" id="messages-container"
+                    style="background-color: #f8f9fa;">
+                    <!-- Messages will be loaded here -->
+                </div>
+
+                <!-- Empty State -->
+                <div class="flex-grow-1 d-flex align-items-center justify-content-center text-muted" id="empty-state">
+                    <div class="text-center">
+                        <i class="bi bi-chat-dots display-1"></i>
+                        <p class="mt-3">Select a conversation to start chatting</p>
+                    </div>
+                </div>
+
+                <!-- Input Area -->
+                <div class="border-top p-3 d-none" id="input-area">
+                    <form id="message-form" class="d-flex">
+                        <input type="text" class="form-control me-2" id="message-input" placeholder="Type a message..."
+                            autocomplete="off">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-send"></i>
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    const API_URL = 'http://localhost:5000/api';
+    const token = localStorage.getItem('token');
+    const currentUser = JSON.parse(localStorage.getItem('user') || 'null');
+    const DEFAULT_AVATAR = '/static/images/default-avatar.png';
+
+    if (!token || !currentUser) {
+        window.location.href = '/login';
+    }
+
+    let currentConversationId = null;
+    let currentReceiverId = null;
+    let currentReceiverPic = null;
+    let pollingInterval = null;
+
+    // Load conversations on page load
+    loadConversations();
+
+    // Poll for new messages every 5 seconds
+    setInterval(loadConversations, 5000);
+
+    async function loadConversations() {
+        try {
+            const response = await fetch(`${API_URL}/chat/conversations`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const data = await response.json();
+
+            if (response.ok) {
+                renderConversations(data.conversations);
+            }
+        } catch (error) {
+            console.error('Error loading conversations:', error);
+        }
+    }
+
+    function renderConversations(conversations) {
+        const list = document.getElementById('conversations-list');
+
+        if (conversations.length === 0) {
+            list.innerHTML = '<p class="text-muted text-center mt-4">No conversations yet.</p>';
+            return;
+        }
+
+        list.innerHTML = conversations.map(conv => {
+            const pic = conv.other_user.profile_picture || DEFAULT_AVATAR;
+            return `
+            <a href="#" class="list-group-item list-group-item-action ${currentConversationId === conv.id ? 'active' : ''}" 
+               onclick="selectConversation(${conv.id}, ${conv.other_user.id}, '${conv.other_user.full_name}', '${pic}')">
+                <div class="d-flex w-100 justify-content-between">
+                    <div class="d-flex align-items-center">
+                        <img src="${pic}" class="rounded-circle me-3" style="width: 40px; height: 40px; object-fit: cover;">
+                        <div>
+                            <h6 class="mb-1 ${conv.unread_count > 0 ? 'fw-bold' : ''}">${conv.other_user.full_name}</h6>
+                            <small class="${conv.unread_count > 0 ? 'fw-bold text-dark' : 'text-muted'} text-truncate d-block" style="max-width: 150px;">
+                                ${conv.last_message || 'No messages'}
+                            </small>
+                        </div>
+                    </div>
+                    <div class="text-end">
+                        <small class="text-muted">${formatTime(conv.last_message_time)}</small>
+                        ${conv.unread_count > 0 ? `<br><span class="badge bg-danger rounded-pill">${conv.unread_count}</span>` : ''}
+                    </div>
+                </div>
+            </a>
+        `}).join('');
+    }
+
+    function selectConversation(id, otherUserId, name, pic) {
+        currentConversationId = id;
+        currentReceiverId = otherUserId;
+        currentReceiverPic = pic || DEFAULT_AVATAR;
+
+        // Update UI
+        document.getElementById('empty-state').classList.add('d-none');
+        document.getElementById('chat-header').classList.remove('d-none');
+        document.getElementById('messages-container').classList.remove('d-none');
+        document.getElementById('input-area').classList.remove('d-none');
+
+        document.getElementById('chat-header-name').textContent = name;
+        document.getElementById('chat-header-img').src = currentReceiverPic;
+        document.getElementById('chat-header-link').href = `/profile/${otherUserId}`;
+
+        // Highlight selected conversation
+        loadConversations();
+
+        // Load messages immediately
+        loadMessages();
+
+        // Start polling messages
+        if (pollingInterval) clearInterval(pollingInterval);
+        pollingInterval = setInterval(loadMessages, 3000);
+    }
+
+    async function loadMessages() {
+        if (!currentConversationId) return;
+
+        try {
+            const response = await fetch(`${API_URL}/chat/${currentConversationId}/messages`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const data = await response.json();
+
+            if (response.ok) {
+                renderMessages(data.messages);
+            }
+        } catch (error) {
+            console.error('Error loading messages:', error);
+        }
+    }
+
+    function renderMessages(messages) {
+        const container = document.getElementById('messages-container');
+        const wasScrolledToBottom = container.scrollHeight - container.scrollTop === container.clientHeight;
+        const myPic = currentUser.profile_picture || DEFAULT_AVATAR;
+
+        container.innerHTML = messages.map(msg => `
+            <div class="d-flex mb-3 ${msg.is_me ? 'justify-content-end' : 'justify-content-start'}">
+                ${!msg.is_me ? `<img src="${currentReceiverPic}" class="rounded-circle me-2 align-self-end" style="width: 30px; height: 30px; object-fit: cover;">` : ''}
+                <div class="card ${msg.is_me ? 'bg-primary text-white' : 'bg-white'}" style="max-width: 75%;">
+                    <div class="card-body py-2 px-3">
+                        <p class="mb-0">${msg.content}</p>
+                        <small class="${msg.is_me ? 'text-white-50' : 'text-muted'} d-block text-end mt-1" style="font-size: 0.7rem;">
+                            ${formatTime(msg.created_at)}
+                        </small>
+                    </div>
+                </div>
+                ${msg.is_me ? `<img src="${myPic}" class="rounded-circle ms-2 align-self-end" style="width: 30px; height: 30px; object-fit: cover;">` : ''}
+            </div>
+        `).join('');
+
+        // Scroll to bottom if it was already at bottom or if it's the first load
+        if (wasScrolledToBottom || messages.length > 0) {
+            container.scrollTop = container.scrollHeight;
+        }
+    }
+
+    document.getElementById('message-form').addEventListener('submit', async function (e) {
+        e.preventDefault();
+        const input = document.getElementById('message-input');
+        const content = input.value.trim();
+
+        if (!content || !currentReceiverId) return;
+
+        // Optimistic UI update (optional, but good for UX)
+        input.value = '';
+
+        try {
+            const response = await fetch(`${API_URL}/chat/send`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    receiver_id: currentReceiverId,
+                    content: content
+                })
+            });
+
+            if (response.ok) {
+                loadMessages(); // Reload messages to show the new one
+                loadConversations(); // Update last message in list
+            } else {
+                console.error('Failed to send message');
+                alert('Failed to send message');
+            }
+        } catch (error) {
+            console.error('Error sending message:', error);
+            alert('Error sending message');
+        }
+    });
+
+    function formatTime(dateString) {
+        if (!dateString) return '';
+        const date = new Date(dateString);
+        return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    }
+</script>
+{% endblock %}
