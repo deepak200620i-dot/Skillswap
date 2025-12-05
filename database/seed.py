@@ -1,4 +1,4 @@
-from database.db import init_db, get_db
+from .db import init_db, get_db
 from utils import hash_password
 
 # Step 1: create tables
