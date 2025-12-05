@@ -1,32 +1,31 @@
 import sqlite3
 import os
 
-DATABASE_PATH = 'skillswap.db'
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+DATABASE_PATH = os.path.join(BASE_DIR, 'skillswap.db')
+SCHEMA_PATH = os.path.join(BASE_DIR, 'database', 'schema.sql')
 
 def get_db():
-    """Get database connection"""
     db = sqlite3.connect(DATABASE_PATH)
-    db.row_factory = sqlite3.Row  # Access columns by name
+    db.row_factory = sqlite3.Row
     return db
 
 def init_db():
-    """Initialize the database with schema"""
     db = get_db()
-    
-    # Read and execute schema
-    schema_path = os.path.join('database', 'schema.sql')
-    with open(schema_path, 'r', encoding='utf-8') as f:
+
+    if not os.path.exists(SCHEMA_PATH):
+        raise FileNotFoundError(f"schema.sql not found at: {SCHEMA_PATH}")
+
+    with open(SCHEMA_PATH, 'r', encoding='utf-8') as f:
         db.executescript(f.read())
-    
+
     db.commit()
     db.close()
-    print("Database initialized successfully!")
+    print("✅ Database initialized successfully!")
 
 def close_db(db):
-    """Close database connection"""
     if db is not None:
         db.close()
 
 if __name__ == '__main__':
-    # Initialize database when run directly
     init_db()

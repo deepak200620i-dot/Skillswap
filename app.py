@@ -3,6 +3,8 @@ from flask_cors import CORS
 from config import config
 from extensions import limiter
 from routes import auth_bp, profile_bp, skills_bp, matching_bp, requests_bp, reviews_bp, chat_bp
+from db import init_db   # ✅ ADD THIS IMPORT
+import os               # ✅ ADD THIS IMPORT
 
 def create_app(config_name='development'):
     """Application factory"""
@@ -17,7 +19,6 @@ def create_app(config_name='development'):
     
     # Initialize Limiter
     limiter.init_app(app)
-    
     
     # Register blueprints
     app.register_blueprint(auth_bp)
@@ -91,8 +92,10 @@ def create_app(config_name='development'):
     
     return app
 
+
 app = create_app()
 
+# ✅ SAFE DATABASE INIT FOR RENDER
 with app.app_context():
     try:
         init_db()
@@ -102,9 +105,8 @@ with app.app_context():
         traceback.print_exc()
         print("❌ Database init failed:", str(e))
 
+
+# ✅ DO NOT USE THIS ON RENDER (Gunicorn handles server)
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port)
-
-
-   
