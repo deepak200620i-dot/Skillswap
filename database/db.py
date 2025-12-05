@@ -21,7 +21,7 @@ def init_db():
 
     db.commit()
     db.close()
-    print("✅ Database initialized successfully!")
+    print("Database initialized successfully!")
 
 def close_db(db):
     if db is not None:

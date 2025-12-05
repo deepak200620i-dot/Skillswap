@@ -1,5 +1,5 @@
 from flask import Blueprint, request, jsonify
-from database import get_db
+from database.db import get_db
 from utils import token_required, sanitize_input, get_profile_picture_url
 
 requests_bp = Blueprint('requests', __name__, url_prefix='/api/requests')

@@ -1,5 +1,5 @@
 from flask import Blueprint, request, jsonify
-from database import get_db
+from database.db import get_db
 from utils import token_required, sanitize_input
 from utils.encryption import encrypt_message, decrypt_message
 

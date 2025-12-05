@@ -1,5 +1,5 @@
 from flask import Blueprint, request, jsonify
-from database import get_db
+from database.db import get_db
 
 skills_bp = Blueprint('skills', __name__, url_prefix='/api/skills')
 

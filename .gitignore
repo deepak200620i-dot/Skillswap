@@ -11,3 +11,9 @@ venv/
 .DS_Store
 .vscode/
 *.log
+static/uploads/
+test_*.py
+reproduce_*.py
+check_*.py
+view_*.py
+reset_*.py

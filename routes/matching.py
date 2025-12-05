@@ -1,5 +1,5 @@
 from flask import Blueprint, request, jsonify
-from database import get_db
+from database.db import get_db
 from utils import get_profile_picture_url
 
 matching_bp = Blueprint('matching', __name__, url_prefix='/api/matching')

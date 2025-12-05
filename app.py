@@ -99,11 +99,11 @@ app = create_app()
 with app.app_context():
     try:
         init_db()
-        print("✅ Database initialized successfully")
+        print("Database initialized successfully")
     except Exception as e:
         import traceback
         traceback.print_exc()
-        print("❌ Database init failed:", str(e))
+        print("Database init failed:", str(e))
 
 
 # ✅ DO NOT USE THIS ON RENDER (Gunicorn handles server)
