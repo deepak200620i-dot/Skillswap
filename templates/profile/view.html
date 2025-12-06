@@ -202,9 +202,17 @@
 
                 // Load reviews
                 loadReviews();
+            } else {
+                document.getElementById('user-name').textContent = 'User not found';
+                document.getElementById('user-email').textContent = '';
+                document.getElementById('user-bio').textContent = 'The requested user could not be found.';
+                document.getElementById('teaching-skills').innerHTML = '<p class="text-danger">User not found</p>';
+                document.getElementById('learning-skills').innerHTML = '<p class="text-danger">User not found</p>';
             }
         } catch (error) {
             console.error('Error loading profile:', error);
+            document.getElementById('user-name').textContent = 'Error';
+            document.getElementById('user-bio').textContent = 'Failed to load profile. Please try again.';
         }
     }
 
