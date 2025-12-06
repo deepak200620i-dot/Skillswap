@@ -1,6 +1,7 @@
 from flask import Blueprint, request, jsonify
 from database.db import get_db
 from utils import get_profile_picture_url
+from sqlalchemy import text
 
 matching_bp = Blueprint('matching', __name__, url_prefix='/api/matching')
 
@@ -16,7 +17,7 @@ def find_teachers():
         db = get_db()
         
         # Find teachers for this skill
-        teachers = db.execute('''
+        result = db.execute(text('''
             SELECT DISTINCT
                 u.id, u.full_name, u.bio, u.profile_picture, u.location, u.availability,
                 us.proficiency_level,
@@ -24,17 +25,18 @@ def find_teachers():
             FROM users u
             JOIN user_skills us ON u.id = us.user_id
             JOIN skills s ON us.skill_id = s.id
-            WHERE us.skill_id = ? AND us.is_teaching = 1
+            WHERE us.skill_id = :skill_id AND us.is_teaching = 1
             ORDER BY us.proficiency_level DESC, u.full_name
-        ''', (skill_id,)).fetchall()
+        '''), {'skill_id': skill_id})
+        teachers = result.fetchall()
         
         # Process profile pictures
         teachers_list = []
         for teacher in teachers:
-            teacher_dict = dict(teacher)
+            teacher_dict = dict(teacher._mapping)
             teacher_dict['profile_picture'] = get_profile_picture_url(
-                teacher['profile_picture'], 
-                teacher['full_name']
+                teacher_dict['profile_picture'], 
+                teacher_dict['full_name']
             )
             teachers_list.append(teacher_dict)
         
@@ -44,6 +46,12 @@ def find_teachers():
         
     except Exception as e:
         return jsonify({'error': f'Failed to find teachers: {str(e)}'}), 500
+    finally:
+        try:
+            if 'db' in locals():
+                db.close()
+        except:
+            pass
 
 @matching_bp.route('/find-learners', methods=['GET'])
 def find_learners():
@@ -57,7 +65,7 @@ def find_learners():
         db = get_db()
         
         # Find learners for this skill
-        learners = db.execute('''
+        result = db.execute(text('''
             SELECT DISTINCT
                 u.id, u.full_name, u.bio, u.profile_picture, u.location, u.availability,
                 us.proficiency_level,
@@ -65,17 +73,18 @@ def find_learners():
             FROM users u
             JOIN user_skills us ON u.id = us.user_id
             JOIN skills s ON us.skill_id = s.id
-            WHERE us.skill_id = ? AND us.is_learning = 1
+            WHERE us.skill_id = :skill_id AND us.is_learning = 1
             ORDER BY u.full_name
-        ''', (skill_id,)).fetchall()
+        '''), {'skill_id': skill_id})
+        learners = result.fetchall()
         
         # Process profile pictures
         learners_list = []
         for learner in learners:
-            learner_dict = dict(learner)
+            learner_dict = dict(learner._mapping)
             learner_dict['profile_picture'] = get_profile_picture_url(
-                learner['profile_picture'], 
-                learner['full_name']
+                learner_dict['profile_picture'], 
+                learner_dict['full_name']
             )
             learners_list.append(learner_dict)
         
@@ -85,6 +94,12 @@ def find_learners():
         
     except Exception as e:
         return jsonify({'error': f'Failed to find learners: {str(e)}'}), 500
+    finally:
+        try:
+            if 'db' in locals():
+                db.close()
+        except:
+            pass
 
 @matching_bp.route('/recommendations', methods=['GET'])
 def get_recommendations():
@@ -98,19 +113,31 @@ def get_recommendations():
             db = get_db()
             
             # Get skills the user wants to learn
-            learning_skills = db.execute('''
+            result = db.execute(text('''
                 SELECT skill_id FROM user_skills
-                WHERE user_id = ? AND is_learning = 1
-            ''', (user_id,)).fetchall()
+                WHERE user_id = :user_id AND is_learning = 1
+            '''), {'user_id': user_id})
+            learning_skills = result.fetchall()
             
             if not learning_skills:
                 return jsonify({'recommendations': []}), 200
             
-            skill_ids = [skill['skill_id'] for skill in learning_skills]
-            placeholders = ','.join('?' * len(skill_ids))
+            skill_ids = [skill._mapping['skill_id'] for skill in learning_skills]
+            
+            # Build dynamic placeholders for IN clause
+            # :s0, :s1, :s2...
+            params = {'user_id': user_id}
+            placeholders = []
+            
+            for i, sid in enumerate(skill_ids):
+                param_name = f"s{i}"
+                placeholders.append(f":{param_name}")
+                params[param_name] = sid
+            
+            placeholder_str = ', '.join(placeholders)
             
             # Find teachers for these skills
-            recommendations = db.execute(f'''
+            query = f'''
                 SELECT DISTINCT
                     u.id, u.full_name, u.bio, u.profile_picture, u.location,
                     s.id as skill_id, s.name as skill_name, s.category,
@@ -118,20 +145,23 @@ def get_recommendations():
                 FROM users u
                 JOIN user_skills us ON u.id = us.user_id
                 JOIN skills s ON us.skill_id = s.id
-                WHERE us.skill_id IN ({placeholders})
+                WHERE us.skill_id IN ({placeholder_str})
                 AND us.is_teaching = 1
-                AND u.id != ?
+                AND u.id != :user_id
                 ORDER BY us.proficiency_level DESC, u.full_name
                 LIMIT 20
-            ''', (*skill_ids, user_id)).fetchall()
+            '''
+            
+            result = db.execute(text(query), params)
+            recommendations = result.fetchall()
             
             # Process profile pictures
             recommendations_list = []
             for rec in recommendations:
-                rec_dict = dict(rec)
+                rec_dict = dict(rec._mapping)
                 rec_dict['profile_picture'] = get_profile_picture_url(
-                    rec['profile_picture'], 
-                    rec['full_name']
+                    rec_dict['profile_picture'], 
+                    rec_dict['full_name']
                 )
                 recommendations_list.append(rec_dict)
             
@@ -141,5 +171,11 @@ def get_recommendations():
             
         except Exception as e:
             return jsonify({'error': f'Failed to get recommendations: {str(e)}'}), 500
+        finally:
+            try:
+                if 'db' in locals():
+                    db.close()
+            except:
+                pass
     
     return _get_recommendations()
