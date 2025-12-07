@@ -15,6 +15,22 @@ if DATABASE_URL and DATABASE_URL.startswith("postgres://"):
 if DATABASE_URL and DATABASE_URL.startswith("mysql://"):
     DATABASE_URL = DATABASE_URL.replace("mysql://", "mysql+pymysql://", 1)
 
+# Fix: Remove 'ssl-mode' from query parameters as it causes errors with pymysql
+if DATABASE_URL and "ssl-mode" in DATABASE_URL:
+    try:
+        if "?" in DATABASE_URL:
+            base_url, query_args = DATABASE_URL.split("?", 1)
+            params = query_args.split("&")
+            # Filter out ssl-mode param which is not supported by pymysql direct args
+            valid_params = [p for p in params if not p.startswith("ssl-mode=")]
+            
+            if valid_params:
+                DATABASE_URL = f"{base_url}?{'&'.join(valid_params)}"
+            else:
+                DATABASE_URL = base_url
+    except Exception as e:
+        print(f"Warning: Error parsing DATABASE_URL: {e}")
+
 # Create Engine
 engine = create_engine(DATABASE_URL, echo=False)
 
