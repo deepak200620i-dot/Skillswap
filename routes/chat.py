@@ -2,12 +2,14 @@ from flask import Blueprint, request, jsonify
 from database.db import get_db
 from utils import token_required, sanitize_input
 from utils.encryption import encrypt_message, decrypt_message
+from extensions import limiter
 from sqlalchemy import text
 
 chat_bp = Blueprint('chat', __name__, url_prefix='/api/chat')
 
 @chat_bp.route('/conversations', methods=['GET'])
 @token_required
+@limiter.limit("1 per second")
 def get_conversations(current_user):
     """Get all conversations for the current user"""
     try:
@@ -67,6 +69,7 @@ def get_conversations(current_user):
 
 @chat_bp.route('/<int:conversation_id>/messages', methods=['GET'])
 @token_required
+@limiter.limit("1 per second")
 def get_messages(current_user, conversation_id):
     """Get messages for a specific conversation"""
     try:
@@ -122,6 +125,7 @@ def get_messages(current_user, conversation_id):
 
 @chat_bp.route('/send', methods=['POST'])
 @token_required
+@limiter.limit("1 per second")
 def send_message(current_user):
     """Send a message"""
     try:
