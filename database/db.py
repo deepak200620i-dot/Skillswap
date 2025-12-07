@@ -99,6 +99,8 @@ def init_db():
                             stmt = stmt.replace('DATETIME', 'TIMESTAMP')
                         elif 'mysql' in DATABASE_URL:
                             stmt = stmt.replace('AUTOINCREMENT', 'AUTO_INCREMENT')
+                            stmt = stmt.replace('INSERT OR IGNORE', 'INSERT IGNORE')
+                            stmt = stmt.replace('CREATE INDEX IF NOT EXISTS', 'CREATE INDEX')
 
                         try:
                             # Use text() for generic execution

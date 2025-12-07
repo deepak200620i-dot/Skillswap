@@ -3,13 +3,13 @@
 -- Users Table
 CREATE TABLE IF NOT EXISTS users (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    email TEXT UNIQUE NOT NULL,
-    password_hash TEXT NOT NULL,
-    full_name TEXT NOT NULL,
+    email VARCHAR(255) UNIQUE NOT NULL,
+    password_hash VARCHAR(255) NOT NULL,
+    full_name VARCHAR(255) NOT NULL,
     bio TEXT,
-    profile_picture TEXT DEFAULT 'default-avatar.png',
-    location TEXT,
-    availability TEXT,
+    profile_picture VARCHAR(255) DEFAULT 'default-avatar.png',
+    location VARCHAR(255),
+    availability VARCHAR(255),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     is_admin BOOLEAN DEFAULT 0
 );
@@ -17,8 +17,8 @@ CREATE TABLE IF NOT EXISTS users (
 -- Skills Table
 CREATE TABLE IF NOT EXISTS skills (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    name TEXT UNIQUE NOT NULL,
-    category TEXT NOT NULL,
+    name VARCHAR(255) UNIQUE NOT NULL,
+    category VARCHAR(255) NOT NULL,
     description TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -28,7 +28,7 @@ CREATE TABLE IF NOT EXISTS user_skills (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     user_id INTEGER NOT NULL,
     skill_id INTEGER NOT NULL,
-    proficiency_level TEXT CHECK(proficiency_level IN ('Beginner', 'Intermediate', 'Expert')) NOT NULL,
+    proficiency_level VARCHAR(50) CHECK(proficiency_level IN ('Beginner', 'Intermediate', 'Expert')) NOT NULL,
     is_teaching BOOLEAN DEFAULT 0,
     is_learning BOOLEAN DEFAULT 0,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -67,7 +67,7 @@ CREATE TABLE IF NOT EXISTS swap_requests (
     sender_id INTEGER NOT NULL,
     receiver_id INTEGER NOT NULL,
     skill_id INTEGER NOT NULL,
-    status TEXT CHECK(status IN ('pending', 'accepted', 'rejected', 'completed')) DEFAULT 'pending',
+    status VARCHAR(50) CHECK(status IN ('pending', 'accepted', 'rejected', 'completed')) DEFAULT 'pending',
     message TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (sender_id) REFERENCES users(id) ON DELETE CASCADE,
