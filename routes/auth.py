@@ -10,6 +10,7 @@ auth_bp = Blueprint('auth', __name__, url_prefix='/api/auth')
 @limiter.limit("10 per day")
 def signup():
     """User registration endpoint"""
+    db = None
     try:
         data = request.get_json()
         
@@ -83,10 +84,12 @@ def signup():
         }), 201
         
     except Exception as e:
-        db.rollback()
+        if db:
+            db.rollback()
         return jsonify({'error': f'Registration failed: {str(e)}'}), 500
     finally:
-        db.close()
+        if db:
+            db.close()
 
 @auth_bp.route('/login', methods=['POST'])
 @limiter.limit("50 per hour")
