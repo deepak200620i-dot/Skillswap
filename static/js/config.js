@@ -1,2 +1,2 @@
 // API Configuration
-const API_URL = 'https://skillswap-v4rj.onrender.com/api';
+const API_URL = 'https://skillswap-w5x1.onrender.com/api';
