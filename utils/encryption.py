@@ -32,7 +32,8 @@ def encrypt_message(message):
         return encrypted_bytes.decode("utf-8")
     except Exception as e:
         print(f"Encryption error: {e}")
-        raise
+        # Return plaintext if encryption fails, don't raise
+        return message
 
 
 def decrypt_message(encrypted_message):
@@ -42,8 +43,14 @@ def decrypt_message(encrypted_message):
 
     try:
         cipher_suite = get_cipher_suite()
-        decrypted_bytes = cipher_suite.decrypt(encrypted_message.encode("utf-8"))
-        return decrypted_bytes.decode("utf-8")
+        # Try to decrypt if it looks like an encrypted message
+        if encrypted_message.startswith("gAAAAAA"):
+            decrypted_bytes = cipher_suite.decrypt(encrypted_message.encode("utf-8"))
+            return decrypted_bytes.decode("utf-8")
+        else:
+            # If it doesn't look encrypted, return as-is (fallback for plaintext)
+            return encrypted_message
     except Exception as e:
         print(f"Decryption error: {e}")
-        return "[Decryption Failed]"
+        # If decryption fails, return original message (it might be plaintext)
+        return encrypted_message
