@@ -11,6 +11,9 @@ def get_profile_picture_url(profile_picture, full_name):
     """
     # If user has uploaded a custom picture and it's not the old default
     if profile_picture and profile_picture != 'default-avatar.png' and not profile_picture.startswith('https://ui-avatars.com'):
+        # Ensure path starts with / so it's treated as absolute from root
+        if not profile_picture.startswith('/'):
+            return f"/{profile_picture}"
         return profile_picture
     
     # Generate initials for UI Avatars

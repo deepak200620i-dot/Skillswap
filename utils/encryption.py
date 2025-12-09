@@ -53,4 +53,7 @@ def decrypt_message(encrypted_message):
     except Exception as e:
         print(f"Decryption error: {e}")
         # If decryption fails, return original message (it might be plaintext)
+        # If decryption fails for what looks like ciphertext, return a clean message
+        if encrypted_message.startswith("gAAAA"):
+            return "🔒 [Message encrypted with old key]"
         return encrypted_message

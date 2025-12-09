@@ -49,12 +49,25 @@ class ProductionConfig(Config):
     def ENCRYPTION_KEY(self):
         key = os.getenv("ENCRYPTION_KEY")
         if not key:
-            # Fallback to generated key with warning (prevents 500 error on startup)
+            # Check for key file
+            key_file = "encryption.key"
+            if os.path.exists(key_file):
+                with open(key_file, "r") as f:
+                    return f.read().strip()
+            
+            # Generate new key and save it
             import logging
             from cryptography.fernet import Fernet
             
-            logging.warning("ENCRYPTION_KEY not set in production. Generating temporary key. Encrypted data will be lost on restart.")
-            return Fernet.generate_key().decode("utf-8")
+            logging.warning("ENCRYPTION_KEY not set. Generating and saving persistent key to encryption.key")
+            key = Fernet.generate_key().decode("utf-8")
+            
+            try:
+                with open(key_file, "w") as f:
+                    f.write(key)
+            except Exception as e:
+                logging.error(f"Failed to save encryption key: {e}")
+                
         return key
 
 
