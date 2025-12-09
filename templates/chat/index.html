@@ -867,15 +867,3 @@
 </body>
 </html>
 
-{% block extra_scripts %}
-<!-- All chat functionality is now handled by the chatApp object defined above -->
-<!-- This block is kept empty for template compatibility -->
-{% endblock %}
-
-    function formatTime(dateString) {
-        if (!dateString) return '';
-        const date = new Date(dateString);
-        return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    }
-</script>
-{% endblock %}

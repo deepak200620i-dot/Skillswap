@@ -138,7 +138,7 @@ def init_db():
                                 )
 
                     trans.commit()
-                    print("✓ Database initialized successfully!")
+                    print("[OK] Database initialized successfully!")
                 except Exception as trans_error:
                     trans.rollback()
                     raise trans_error
