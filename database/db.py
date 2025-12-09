@@ -144,7 +144,7 @@ def init_db():
                     raise trans_error
 
     except Exception as e:
-        print(f"✗ Database initialization failed: {e}")
+        print(f"X Database initialization failed: {e}")
         raise
 
 

@@ -92,8 +92,13 @@ def register_error_handlers(app):
     def handle_general_exception(error):
         """Handle uncaught exceptions"""
         log_error(f"Uncaught Exception: {error}", exception=error)
+        import traceback
         return (
-            jsonify({"error": "An unexpected error occurred. Please try again later."}),
+            jsonify({
+                "error": "An unexpected error occurred.",
+                "message": str(error),
+                "traceback": traceback.format_exc()
+            }),
             500,
         )
 
