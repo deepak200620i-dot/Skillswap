@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -234,6 +235,7 @@
                 opacity: 0;
                 transform: translateY(10px);
             }
+
             to {
                 opacity: 1;
                 transform: translateY(0);
@@ -509,6 +511,7 @@
         }
     </style>
 </head>
+
 <body>
     <div class="chat-container">
         <!-- Conversations List -->
@@ -561,7 +564,7 @@
                     const response = await fetch('/api/chat/conversations', {
                         headers: { 'Authorization': `Bearer ${this.token}` }
                     });
-                    
+
                     // Handle 401 Unauthorized - token expired or invalid
                     if (response.status === 401) {
                         this.stopAutoRefresh();
@@ -570,9 +573,9 @@
                         window.location.href = '/login';
                         return;
                     }
-                    
+
                     if (!response.ok) throw new Error('Failed to load conversations');
-                    
+
                     const data = await response.json();
                     this.conversations = data.conversations || [];
                     this.renderConversations();
@@ -655,7 +658,6 @@
                         <div class="input-wrapper">
                             <textarea class="message-input" id="messageInput" placeholder="Type a message..." 
                                      rows="1"></textarea>
-                            <button class="emoji-button" id="emojiButton" title="Add emoji">😊</button>
                             <button class="send-button" id="sendButton">
                                 <i class="fas fa-paper-plane"></i>
                             </button>
@@ -671,7 +673,7 @@
                     const response = await fetch(`/api/chat/${conversationId}/messages`, {
                         headers: { 'Authorization': `Bearer ${this.token}` }
                     });
-                    
+
                     // Handle 401 Unauthorized - token expired or invalid
                     if (response.status === 401) {
                         this.stopAutoRefresh();
@@ -680,9 +682,9 @@
                         window.location.href = '/login';
                         return;
                     }
-                    
+
                     if (!response.ok) throw new Error('Failed to load messages');
-                    
+
                     const data = await response.json();
                     this.messages[conversationId] = data.messages || [];
                     this.renderMessages();
@@ -695,7 +697,7 @@
             renderMessages() {
                 const area = document.getElementById('messagesArea');
                 const messages = this.messages[this.currentConversationId] || [];
-                
+
                 if (messages.length === 0) {
                     area.innerHTML = `
                         <div class="empty-state" style="height: 100%;">
@@ -722,7 +724,6 @@
             setupMessageInputListeners() {
                 const input = document.getElementById('messageInput');
                 const sendBtn = document.getElementById('sendButton');
-                const emojiBtn = document.getElementById('emojiButton');
 
                 input.addEventListener('keydown', (e) => {
                     if (e.key === 'Enter' && !e.shiftKey) {
@@ -737,22 +738,14 @@
                 });
 
                 sendBtn.addEventListener('click', () => this.sendMessage());
-                emojiBtn.addEventListener('click', () => this.toggleEmojiPicker());
             },
 
-            toggleEmojiPicker() {
-                const emojis = ['😀', '😃', '😄', '😁', '😆', '😅', '🤣', '😂', '😊', '😇', '🙂', '🙃', '😉', '😌', '😍', '🥰', '😘', '😗', '😚', '😙', '🥲', '😋', '😛', '😜', '🤪', '😝', '🤑', '🤗', '🤭', '🤫', '🤔', '🤐', '🤨', '😐', '😑', '😶', '😏', '😒', '🙁', '😬', '🤥', '😌', '😔', '😪', '🤤', '😴', '😷', '🤒', '🤕', '🤢', '🤮', '🤧', '🤬', '😈', '😠', '😡', '🤬', '😤', '😭', '😢', '😰', '😨', '😧', '😦', '😵', '🤯', '🤠', '🥳', '😎', '🤓', '🧐', '😕', '😲', '🙁', '☹️', '😮', '😯', '😲', '😳', '❤️', '🧡', '💛', '💚', '💙', '💜', '👍', '👎', '👋', '✋', '👌', '🎉', '🎊', '🎈', '✨', '🔥', '⭐', '👏'];
-                const randomEmoji = emojis[Math.floor(Math.random() * emojis.length)];
-                const input = document.getElementById('messageInput');
-                input.value += randomEmoji;
-                input.focus();
-                input.dispatchEvent(new Event('input'));
-            },
+
 
             async sendMessage() {
                 const input = document.getElementById('messageInput');
                 const content = input.value.trim();
-                
+
                 if (!content || !this.currentConversationId) return;
 
                 try {
@@ -779,7 +772,7 @@
                     }
 
                     if (!response.ok) throw new Error('Failed to send message');
-                    
+
                     input.value = '';
                     input.style.height = 'auto';
                     await this.loadMessages(this.currentConversationId);
@@ -823,17 +816,17 @@
                         window.location.href = '/login';
                         return;
                     }
-                    
+
                     // Update token in case it changed
                     this.token = token;
-                    
+
                     this.loadConversations();
                     if (this.currentConversationId) {
                         this.loadMessages(this.currentConversationId);
                     }
                 }, 30000);
             },
-            
+
             stopAutoRefresh() {
                 if (this.autoRefreshInterval) {
                     clearInterval(this.autoRefreshInterval);
@@ -865,5 +858,5 @@
         document.addEventListener('DOMContentLoaded', () => chatApp.init());
     </script>
 </body>
-</html>
 
+</html>
