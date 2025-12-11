@@ -243,12 +243,12 @@
         }
 
         .message-bubble {
-            max-width: 70%;
-            padding: 10px 14px;
+            max-width: 85%;
+            padding: 10px 16px;
             border-radius: 12px;
             word-wrap: break-word;
             word-break: break-word;
-            line-height: 1.4;
+            line-height: 1.5;
             font-size: 0.95rem;
         }
 
@@ -305,19 +305,6 @@
             outline: none;
             border-color: #6366f1;
             box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
-        }
-
-        .emoji-button {
-            background: none;
-            border: none;
-            font-size: 1.5rem;
-            cursor: pointer;
-            padding: 8px;
-            transition: transform 0.2s ease;
-        }
-
-        .emoji-button:hover {
-            transform: scale(1.2);
         }
 
         .send-button {
@@ -430,7 +417,7 @@
             }
 
             .message-bubble {
-                max-width: 85%;
+                max-width: 90%;
             }
 
             .message-input {
@@ -441,11 +428,6 @@
             .send-button {
                 padding: 8px 12px;
                 font-size: 0.9rem;
-            }
-
-            .emoji-button {
-                font-size: 1.2rem;
-                padding: 6px;
             }
 
             .conversations-header h2 {
@@ -460,7 +442,7 @@
             }
 
             .message-bubble {
-                max-width: 80%;
+                max-width: 85%;
             }
         }
 
@@ -547,6 +529,7 @@
             currentUserId: null,
             conversations: [],
             messages: {},
+            lastMessageCount: 0,
             autoScrollEnabled: true,
 
             async init() {
@@ -581,22 +564,30 @@
                     this.renderConversations();
                 } catch (error) {
                     console.error('Error loading conversations:', error);
-                    this.showError('Failed to load conversations');
+                    // Silent fail for polling
                 }
             },
 
             renderConversations() {
                 const list = document.getElementById('conversationsList');
-                if (this.conversations.length === 0) {
-                    list.innerHTML = `
-                        <div class="empty-state" style="height: auto; padding: 20px;">
-                            <p style="margin: 0;">No conversations yet</p>
-                        </div>
-                    `;
-                    return;
+                // Only render if empty to avoid layout shift, or if data changes (simplified)
+                if (list.childElementCount === 0 || list.innerHTML.includes('loading-spinner')) {
+                    if (this.conversations.length === 0) {
+                        list.innerHTML = `
+                            <div class="empty-state" style="height: auto; padding: 20px;">
+                                <p style="margin: 0;">No conversations yet</p>
+                            </div>
+                        `;
+                        return;
+                    }
                 }
 
-                list.innerHTML = this.conversations.map(conv => `
+                // Simplified re-render (HTML replacement is fast enough for small lists, 
+                // but preserving scroll position is handled by browser usually for innerHTML if not reflowed)
+                // Ideally we'd diff, but for now just updating HTML. 
+                // To avoid flickering, we could check if HTML string is different.
+
+                const newHtml = this.conversations.map(conv => `
                     <button class="conversation-item ${this.currentConversationId === conv.id ? 'active' : ''}" 
                             data-conv-id="${conv.id}">
                         <img src="${conv.other_user.profile_picture}" alt="${conv.other_user.full_name}" 
@@ -609,21 +600,25 @@
                     </button>
                 `).join('');
 
-                document.querySelectorAll('.conversation-item').forEach(item => {
-                    item.addEventListener('click', () => {
-                        this.selectConversation(parseInt(item.dataset.convId));
+                if (list.innerHTML !== newHtml) {
+                    list.innerHTML = newHtml;
+                    document.querySelectorAll('.conversation-item').forEach(item => {
+                        item.addEventListener('click', () => {
+                            this.selectConversation(parseInt(item.dataset.convId));
+                        });
                     });
-                });
+                }
             },
 
             async selectConversation(conversationId) {
                 this.currentConversationId = conversationId;
+                this.lastMessageCount = 0; // Reset for new conv
                 const conv = this.conversations.find(c => c.id === conversationId);
                 if (!conv) return;
 
                 this.renderMessagesPanel(conv);
                 await this.loadMessages(conversationId);
-                this.renderConversations();
+                this.renderConversations(); // Update active state
             },
 
             renderMessagesPanel(conv) {
@@ -686,15 +681,22 @@
                     if (!response.ok) throw new Error('Failed to load messages');
 
                     const data = await response.json();
-                    this.messages[conversationId] = data.messages || [];
-                    this.renderMessages();
+                    const newMessages = data.messages || [];
+
+                    // Optimization: Only render if message count changed or it's first load
+                    // (Simple heuristic, can be improved with ID checking)
+                    if (newMessages.length !== this.lastMessageCount || this.lastMessageCount === 0) {
+                        this.messages[conversationId] = newMessages;
+                        this.lastMessageCount = newMessages.length;
+                        this.renderMessages(true); // true = force scroll if new message
+                    }
+
                 } catch (error) {
                     console.error('Error loading messages:', error);
-                    this.showError('Failed to load messages');
                 }
             },
 
-            renderMessages() {
+            renderMessages(isNewData = false) {
                 const area = document.getElementById('messagesArea');
                 const messages = this.messages[this.currentConversationId] || [];
 
@@ -709,6 +711,9 @@
                     return;
                 }
 
+                // Check scroll position before updating
+                const isNearBottom = area.scrollHeight - area.scrollTop - area.clientHeight < 100;
+
                 area.innerHTML = messages.map(msg => `
                     <div class="message ${msg.is_me ? 'own' : 'other'}">
                         <div>
@@ -718,7 +723,10 @@
                     </div>
                 `).join('');
 
-                this.autoScroll();
+                // Smart Scroll: Scroll if it was already at bottom OR if it's a fresh load/send
+                if (isNewData && (isNearBottom || this.lastMessageCount <= 1)) {
+                    this.autoScroll();
+                }
             },
 
             setupMessageInputListeners() {
@@ -748,6 +756,10 @@
 
                 if (!content || !this.currentConversationId) return;
 
+                // Optimistic Update: clear input immediately
+                input.value = '';
+                input.style.height = 'auto';
+
                 try {
                     const conv = this.conversations.find(c => c.id === this.currentConversationId);
                     const response = await fetch('/api/chat/send', {
@@ -773,8 +785,7 @@
 
                     if (!response.ok) throw new Error('Failed to send message');
 
-                    input.value = '';
-                    input.style.height = 'auto';
+                    // Reload to get true server state (ID, timestamp)
                     await this.loadMessages(this.currentConversationId);
                 } catch (error) {
                     console.error('Error sending message:', error);
@@ -798,8 +809,8 @@
             },
 
             autoScroll() {
-                if (this.autoScrollEnabled) {
-                    const area = document.getElementById('messagesArea');
+                const area = document.getElementById('messagesArea');
+                if (area) {
                     setTimeout(() => {
                         area.scrollTop = area.scrollHeight;
                     }, 0);
@@ -807,7 +818,7 @@
             },
 
             setupAutoRefresh() {
-                // Check token validity every 3 seconds
+                // Refresh every 4 seconds (much faster than 30s, but not crazy)
                 this.autoRefreshInterval = setInterval(() => {
                     // Only refresh if token exists and is valid
                     const token = localStorage.getItem('token');
@@ -824,7 +835,7 @@
                     if (this.currentConversationId) {
                         this.loadMessages(this.currentConversationId);
                     }
-                }, 30000);
+                }, 4000);
             },
 
             stopAutoRefresh() {
