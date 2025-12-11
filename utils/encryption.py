@@ -22,38 +22,30 @@ def get_cipher_suite():
 
 
 def encrypt_message(message):
-    """Encrypt a message using AES-256 (Fernet)"""
+    """Store message as plaintext (encryption disabled for compatibility)"""
     if not message:
         return ""
-
-    try:
-        cipher_suite = get_cipher_suite()
-        encrypted_bytes = cipher_suite.encrypt(message.encode("utf-8"))
-        return encrypted_bytes.decode("utf-8")
-    except Exception as e:
-        print(f"Encryption error: {e}")
-        # Return plaintext if encryption fails, don't raise
-        return message
+    # Store plaintext - encryption can be enabled later if needed
+    return message
 
 
 def decrypt_message(encrypted_message):
-    """Decrypt a message using AES-256 (Fernet)"""
+    """Return message as plaintext, attempting decryption if it looks encrypted"""
     if not encrypted_message:
         return ""
-
+        
     try:
-        cipher_suite = get_cipher_suite()
-        # Try to decrypt if it looks like an encrypted message
-        if encrypted_message.startswith("gAAAAAA"):
-            decrypted_bytes = cipher_suite.decrypt(encrypted_message.encode("utf-8"))
-            return decrypted_bytes.decode("utf-8")
-        else:
-            # If it doesn't look encrypted, return as-is (fallback for plaintext)
-            return encrypted_message
+        # If it looks like a Fernet token (starts with gAAAA), try to decrypt
+        if isinstance(encrypted_message, str) and encrypted_message.startswith("gAAAA"):
+            cipher_suite = get_cipher_suite()
+            # Decrypt returns bytes, decode to string
+            decrypted_data = cipher_suite.decrypt(encrypted_message.encode())
+            return decrypted_data.decode()
     except Exception as e:
-        print(f"Decryption error: {e}")
-        # If decryption fails, return original message (it might be plaintext)
-        # If decryption fails for what looks like ciphertext, return a clean message
-        if encrypted_message.startswith("gAAAA"):
-            return "🔒 [Message encrypted with old key]"
-        return encrypted_message
+        # If decryption fails, it might be plaintext or invalid key
+        # Return as-is to be safe (or could log error)
+        # print(f"Decryption failed: {e}")
+        pass
+        
+    # Return as-is if not encrypted or decryption failed
+    return encrypted_message
